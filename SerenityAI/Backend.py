@@ -14,7 +14,6 @@ import logging
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Store active WebSocket connections and their states
 active_connections: Dict[WebSocket, bool] = {}
 
 app.add_middleware(
@@ -28,7 +27,6 @@ app.add_middleware(
 HUME_API_KEY = "qLv805FNRT6HzK2tHwdg89RwW1UpsXHOxgVw8jyoujZvOihU"
 CONFIG_ID = "681f31b0-3735-4297-8664-7510563f09d2"
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -55,16 +53,15 @@ async def read_root(request: Request):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    active_connections[websocket] = True  # Set all connections to active by default for testing
+    active_connections[websocket] = True
     
-    # Add WebSocket handler to logger
     ws_handler = WebSocketHandler(websocket)
     logger.addHandler(ws_handler)
     
     try:
         while True:
             data = await websocket.receive_text()
-            logger.info(f"[DEBUG] Received from frontend: {data}")  # Log every incoming message
+            logger.info(f"[DEBUG] Received from frontend: {data}")
             try:
                 message = json.loads(data)
                 if message.get("type") == "start_voice":
@@ -99,12 +96,10 @@ async def start_voice_recognition():
             logger.info("Connected to Hume Voice API")
             mic_interface = MicrophoneInterface()
             
-            # Start voice recognition
             logger.info("Starting microphone interface...")
             await mic_interface.start(socket, allow_user_interrupt=True)
             logger.info("Microphone interface started. Say something!")
             
-            # Process voice input
             while True:
                 try:
                     logger.info(f"DEBUG: Waiting for transcription... Handlers: {logger.handlers}")
@@ -137,7 +132,7 @@ async def start_voice_recognition():
 
 @app.post("/send-test")
 async def send_test():
-    # Send a test message to all active WebSocket clients
+
     for connection, is_active in active_connections.items():
         try:
             await connection.send_json({"type": "ai", "message": "[Manual Test] This is a manual test message from /send-test endpoint."})
